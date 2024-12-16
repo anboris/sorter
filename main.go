@@ -87,6 +87,9 @@ func checkAndSortFiles() error {
 			return nil
 		}
 
+		// Log the file being processed
+		fmt.Printf("Processing file: %s\n", filePath)
+
 		// Add a goroutine to process each file concurrently
 		wg.Add(1)
 		go func(filePath string) {
@@ -113,6 +116,7 @@ func checkAndSortFiles() error {
 				moveFileWithMetadata(filePath, deleteDir)
 			} else {
 				// If no duplicate, move to sorted folder and add hash to the map
+				fmt.Printf("File is unique, moving to sorted folder: %s\n", filePath)
 				moveFileBasedOnExtension(filePath)
 				sortedHashes[hash] = filePath
 			}
@@ -130,6 +134,8 @@ func checkAndSortFiles() error {
 
 // Function to move file to the destination folder
 func moveFile(src, dest string) error {
+	fmt.Printf("Moving file: %s to folder: %s\n", src, dest)
+
 	err := os.MkdirAll(dest, os.ModePerm)
 	if err != nil {
 		return err
@@ -158,12 +164,14 @@ func moveFile(src, dest string) error {
 		return err
 	}
 
-	fmt.Printf("Moved file to %s\n", destFilePath)
+	fmt.Printf("File successfully moved to: %s\n", destFilePath)
 	return nil
 }
 
 // Function to move file to the delete folder with metadata (hash-based name)
 func moveFileWithMetadata(src, dest string) error {
+	fmt.Printf("Moving file to delete folder with metadata: %s\n", src)
+
 	err := os.MkdirAll(dest, os.ModePerm)
 	if err != nil {
 		return err
@@ -189,12 +197,14 @@ func moveFileWithMetadata(src, dest string) error {
 		return err
 	}
 
-	fmt.Printf("Moved file to %s with metadata\n", destFilePath)
+	fmt.Printf("File successfully moved to delete folder: %s\n", destFilePath)
 	return nil
 }
 
 // Function to move file based on its extension
 func moveFileBasedOnExtension(filePath string) {
+	fmt.Printf("Sorting file by extension: %s\n", filePath)
+
 	ext := strings.ToLower(filepath.Ext(filePath))
 	ext = strings.TrimPrefix(ext, ".") // Remove the leading dot
 
@@ -213,6 +223,12 @@ func moveFileBasedOnExtension(filePath string) {
 		"docx": "Office_Docs",
 		"xls":  "Office_Docs",
 		"xlsx": "Office_Docs",
+		"mp3":  "Audio_Files",
+		"m4a":  "Audio_Files",
+		"webm": "Video",
+		"mkv":  "Video",
+		"mp4":  "Video",
+		"url":  "Bookmarks",
 	}
 
 	// Check if the file extension has a defined category
