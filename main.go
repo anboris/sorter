@@ -19,6 +19,17 @@ const (
 	deleteDir = baseDir + "/delete"
 )
 
+// File extension categories mapping
+var extCategories = map[string]string{
+	"iso":  "ISO_Files",
+	"pdf":  "PDF_Files",
+	"jpg":  "Image_Files",
+	"png":  "Image_Files",
+	"txt":  "Text_Files",
+	"docx": "Document_Files",
+	"mp4":  "Video_Files",
+}
+
 // Helper function to calculate SHA-256 hash of a file
 func fileHash(filePath string) (string, error) {
 	file, err := os.Open(filePath)
@@ -103,9 +114,8 @@ func checkAndSortFiles() error {
 				fmt.Printf("Duplicate found: %s already exists as %s\n", filePath, existingPath)
 				moveFileWithMetadata(filePath, deleteDir)
 			} else {
-				// If no duplicate, move to sorted folder and add hash to the map
-				destFolder := filepath.Join(sortedDir, "new")
-				moveFile(filePath, destFolder)
+				// If no duplicate, move to sorted folder and sort based on file extension
+				moveFileBasedOnExtension(filePath)
 				sortedHashes[hash] = filePath
 			}
 		}(filePath)
@@ -115,6 +125,24 @@ func checkAndSortFiles() error {
 
 	wg.Wait()
 	return err
+}
+
+// Function to move file to a folder based on its extension
+func moveFileBasedOnExtension(filePath string) {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	ext = strings.TrimPrefix(ext, ".") // Remove the leading dot
+
+	// Default folder if no specific category is found
+	categoryFolder := "Categories"
+
+	// Check if the file extension has a defined category
+	if folder, found := extCategories[ext]; found {
+		categoryFolder = folder
+	}
+
+	// Move the file to the appropriate folder
+	destFolder := filepath.Join(sortedDir, categoryFolder)
+	moveFile(filePath, destFolder)
 }
 
 // Function to move file to the destination folder
