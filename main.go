@@ -104,7 +104,7 @@ func checkAndSortFiles() error {
 				moveFileWithMetadata(filePath, deleteDir)
 			} else {
 				// If no duplicate, move to sorted folder and add hash to the map
-				destFolder := filepath.Join(sortedDir, "Miscellaneous")
+				destFolder := filepath.Join(sortedDir, "new")
 				moveFile(filePath, destFolder)
 				sortedHashes[hash] = filePath
 			}
