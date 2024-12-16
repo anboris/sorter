@@ -6,12 +6,25 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
+// Helper function to determine the base directory based on the operating system
+func getBaseDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "C:/me/sort" // Base directory for Windows
+	case "darwin":
+		return "/Users/andrew/Files" // Base directory for macOS
+	default:
+		return "C:/me/sort" // Default to Linux or other OS
+	}
+}
+
 // Directory paths
-const (
-	baseDir   = "C:/me/sort" // Base directory
+var (
+	baseDir   = getBaseDir() // Dynamically set base directory
 	inboxDir  = baseDir + "/inbox"
 	sortedDir = baseDir + "/sorted"
 	deleteDir = baseDir + "/delete"
@@ -115,6 +128,7 @@ func checkAndSortFiles() error {
 
 		// Mark the hash as processed for this run
 		processedHashes[hash] = true
+
 		return nil
 	})
 
@@ -225,20 +239,16 @@ func moveFileBasedOnExtension(filePath string) {
 		categoryFolder = folder
 	}
 
-	// Construct the final destination path
-	destPath := filepath.Join(sortedDir, categoryFolder)
-
-	// Move the file
-	err := moveFile(filePath, destPath)
-	if err != nil {
-		fmt.Printf("Error moving file %s: %v\n", filePath, err)
-	}
+	// Move the file to the appropriate folder
+	destFolder := filepath.Join(sortedDir, categoryFolder)
+	moveFile(filePath, destFolder)
 }
 
 func main() {
-	// Start processing the files
 	err := checkAndSortFiles()
 	if err != nil {
-		fmt.Printf("Error during file sorting: %v\n", err)
+		fmt.Println("Error while sorting files:", err)
+	} else {
+		fmt.Println("File sorting completed successfully.")
 	}
 }
