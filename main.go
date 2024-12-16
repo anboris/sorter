@@ -234,6 +234,7 @@ func moveFileBasedOnExtension(filePath string) {
 		"pages":   "Office_Docs",
 		"key":     "Office_Docs",
 		"numbers": "Office_Docs",
+		"odt":     "Office_Docs",
 		"mp3":     "Audio_Files",
 		"m4a":     "Audio_Files",
 		"webm":    "Video",
