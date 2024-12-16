@@ -223,6 +223,8 @@ func moveFileBasedOnExtension(filePath string) {
 		"jpg":     "Images",
 		"jpeg":    "Images",
 		"png":     "Images",
+		"heic":    "Images",
+		"gif":     "Images",
 		"doc":     "Office_Docs",
 		"docx":    "Office_Docs",
 		"xls":     "Office_Docs",
