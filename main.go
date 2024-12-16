@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Directory paths
@@ -35,7 +36,7 @@ func fileHash(filePath string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-// Function to collect hashes from sorted directory
+// Function to collect hashes from sorted directory into a hash map
 func collectSortedHashes() (map[string]string, error) {
 	hashes := make(map[string]string)
 
@@ -96,11 +97,11 @@ func checkAndSortFiles() error {
 				return
 			}
 
-			// Check if file already exists in sorted directory
+			// Check if file already exists in sorted directory using the hash map
 			if existingPath, found := sortedHashes[hash]; found {
-				// If a duplicate is found, move to delete folder
+				// If a duplicate is found, move to delete folder with metadata
 				fmt.Printf("Duplicate found: %s already exists as %s\n", filePath, existingPath)
-				moveFile(filePath, deleteDir)
+				moveFileWithMetadata(filePath, deleteDir)
 			} else {
 				// If no duplicate, move to sorted folder and add hash to the map
 				destFolder := filepath.Join(sortedDir, "Miscellaneous")
@@ -130,6 +131,31 @@ func moveFile(src, dest string) error {
 	}
 
 	fmt.Printf("Moved file to %s\n", destFilePath)
+	return nil
+}
+
+// Function to move file to the delete folder with metadata (timestamp or tag in the name)
+func moveFileWithMetadata(src, dest string) error {
+	err := os.MkdirAll(dest, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	// Get the current timestamp (or you can use a custom tag)
+	timestamp := time.Now().Format("20060102_150405") // Format: YYYYMMDD_HHMMSS
+
+	// Append the timestamp to the file name
+	ext := filepath.Ext(src)
+	baseName := strings.TrimSuffix(filepath.Base(src), ext)
+	newName := fmt.Sprintf("%s_processed_%s_delete%s", baseName, timestamp, ext)
+
+	destFilePath := filepath.Join(dest, newName)
+	err = os.Rename(src, destFilePath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Moved file to %s with metadata\n", destFilePath)
 	return nil
 }
 
