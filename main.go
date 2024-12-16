@@ -73,6 +73,9 @@ func checkAndSortFiles() error {
 		return fmt.Errorf("Error collecting sorted file hashes: %v", err)
 	}
 
+	// Map to track processed hashes to avoid duplicates during the current run
+	processedHashes := make(map[string]bool)
+
 	// Walking through the inbox directory and its subdirectories
 	err = filepath.Walk(inboxDir, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -96,6 +99,13 @@ func checkAndSortFiles() error {
 				return
 			}
 
+			// Check if the file has already been processed in this run
+			if processedHashes[hash] {
+				fmt.Printf("Duplicate detected within run: %s\n", filePath)
+				moveFileWithMetadata(filePath, deleteDir)
+				return
+			}
+
 			// Check if file already exists in sorted directory using the hash map
 			if existingPath, found := sortedHashes[hash]; found {
 				// If a duplicate is found, move to delete folder with metadata
@@ -106,6 +116,9 @@ func checkAndSortFiles() error {
 				moveFileBasedOnExtension(filePath)
 				sortedHashes[hash] = filePath
 			}
+
+			// Mark the hash as processed for this run
+			processedHashes[hash] = true
 		}(filePath)
 
 		return nil
@@ -169,8 +182,8 @@ func moveFileWithMetadata(src, dest string) error {
 
 	// Append the hash to the file name
 	newName := fmt.Sprintf("%s_%s_processed_delete%s", baseName, hashPrefix, ext)
-
 	destFilePath := filepath.Join(dest, newName)
+
 	err = os.Rename(src, destFilePath)
 	if err != nil {
 		return err
