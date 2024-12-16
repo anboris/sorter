@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 )
 
 // Directory paths
@@ -65,8 +64,6 @@ func collectSortedHashes() (map[string]string, error) {
 
 // Function to check for duplicate files in inbox and move them accordingly
 func checkAndSortFiles() error {
-	var wg sync.WaitGroup
-
 	// Collect file hashes from the sorted directory
 	sortedHashes, err := collectSortedHashes()
 	if err != nil {
@@ -90,45 +87,37 @@ func checkAndSortFiles() error {
 		// Log the file being processed
 		fmt.Printf("Processing file: %s\n", filePath)
 
-		// Add a goroutine to process each file concurrently
-		wg.Add(1)
-		go func(filePath string) {
-			defer wg.Done()
+		// Calculate hash for the file in the inbox
+		hash, err := fileHash(filePath)
+		if err != nil {
+			fmt.Printf("Error hashing file %s: %v\n", filePath, err)
+			return nil
+		}
 
-			// Calculate hash for the file in the inbox
-			hash, err := fileHash(filePath)
-			if err != nil {
-				fmt.Printf("Error hashing file %s: %v\n", filePath, err)
-				return
-			}
+		// Check if the file has already been processed in this run
+		if processedHashes[hash] {
+			fmt.Printf("Duplicate detected within run: %s\n", filePath)
+			moveFileWithMetadata(filePath, deleteDir)
+			return nil
+		}
 
-			// Check if the file has already been processed in this run
-			if processedHashes[hash] {
-				fmt.Printf("Duplicate detected within run: %s\n", filePath)
-				moveFileWithMetadata(filePath, deleteDir)
-				return
-			}
+		// Check if file already exists in sorted directory using the hash map
+		if existingPath, found := sortedHashes[hash]; found {
+			// If a duplicate is found, move to delete folder with metadata
+			fmt.Printf("Duplicate found: %s already exists as %s\n", filePath, existingPath)
+			moveFileWithMetadata(filePath, deleteDir)
+		} else {
+			// If no duplicate, move to sorted folder and add hash to the map
+			fmt.Printf("File is unique, moving to sorted folder: %s\n", filePath)
+			moveFileBasedOnExtension(filePath)
+			sortedHashes[hash] = filePath
+		}
 
-			// Check if file already exists in sorted directory using the hash map
-			if existingPath, found := sortedHashes[hash]; found {
-				// If a duplicate is found, move to delete folder with metadata
-				fmt.Printf("Duplicate found: %s already exists as %s\n", filePath, existingPath)
-				moveFileWithMetadata(filePath, deleteDir)
-			} else {
-				// If no duplicate, move to sorted folder and add hash to the map
-				fmt.Printf("File is unique, moving to sorted folder: %s\n", filePath)
-				moveFileBasedOnExtension(filePath)
-				sortedHashes[hash] = filePath
-			}
-
-			// Mark the hash as processed for this run
-			processedHashes[hash] = true
-		}(filePath)
-
+		// Mark the hash as processed for this run
+		processedHashes[hash] = true
 		return nil
 	})
 
-	wg.Wait()
 	return err
 }
 
@@ -236,16 +225,20 @@ func moveFileBasedOnExtension(filePath string) {
 		categoryFolder = folder
 	}
 
-	// Move the file to the appropriate folder
-	destFolder := filepath.Join(sortedDir, categoryFolder)
-	moveFile(filePath, destFolder)
+	// Construct the final destination path
+	destPath := filepath.Join(sortedDir, categoryFolder)
+
+	// Move the file
+	err := moveFile(filePath, destPath)
+	if err != nil {
+		fmt.Printf("Error moving file %s: %v\n", filePath, err)
+	}
 }
 
 func main() {
+	// Start processing the files
 	err := checkAndSortFiles()
 	if err != nil {
-		fmt.Println("Error while sorting files:", err)
-	} else {
-		fmt.Println("File sorting completed successfully.")
+		fmt.Printf("Error during file sorting: %v\n", err)
 	}
 }
