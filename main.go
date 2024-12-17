@@ -16,7 +16,7 @@ func getBaseDir() string {
 	case "windows":
 		return "C:/me/sort" // Base directory for Windows
 	case "darwin":
-		return "/Users/andrew/Files" // Base directory for macOS
+		return "/Volumes/CCC" // Base directory for macOS
 	default:
 		return "C:/me/sort" // Default to Linux or other OS
 	}
@@ -224,6 +224,7 @@ func moveFileBasedOnExtension(filePath string) {
 		"jpeg":    "Images",
 		"png":     "Images",
 		"heic":    "Images",
+		"CR2":     "Photos",
 		"gif":     "Images",
 		"doc":     "Office_Docs",
 		"docx":    "Office_Docs",
@@ -252,6 +253,7 @@ func moveFileBasedOnExtension(filePath string) {
 		"ttc":     "Fonts",
 		"ttf":     "Fonts",
 		"epub":    "Books",
+		"fossil":  "Fossils",
 	}
 
 	// Check if the file extension has a defined category
