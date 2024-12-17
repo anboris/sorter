@@ -97,6 +97,24 @@ func checkAndSortFiles() error {
 			return nil
 		}
 
+		// Skip files that are empty
+		if info.Size() == 0 {
+			fmt.Printf("Skipping empty file: %s\n", filePath)
+			return nil
+		}
+
+		// Check for invalid or unsafe characters in file names to prevent issues on certain operating systems
+		if strings.ContainsAny(info.Name(), `<>:"/\|?*`) {
+			fmt.Printf("Skipping file with invalid characters: %s\n", filePath)
+			return nil
+		}
+
+		// Skip symbolic links to avoid processing unintended files or creating loops
+		if info.Mode()&os.ModeSymlink != 0 {
+			fmt.Printf("Skipping symbolic link: %s\n", filePath)
+			return nil
+		}
+
 		// Log the file being processed
 		fmt.Printf("Processing file: %s\n", filePath)
 
