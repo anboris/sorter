@@ -218,6 +218,7 @@ func moveFileBasedOnExtension(filePath string) {
 	extCategories := map[string]string{
 		"iso":     "ISO_Files",
 		"dmg":     "ISO_Files",
+		"pkg":     "ISO_Files",
 		"pdf":     "PDF_Files",
 		"txt":     "Text_Files",
 		"jpg":     "Images",
@@ -243,6 +244,8 @@ func moveFileBasedOnExtension(filePath string) {
 		"mp4":     "Video",
 		"m4v":     "Video",
 		"mov":     "Video",
+		"avi":     "Video",
+		"3gp":     "Video",
 		"url":     "Bookmarks",
 		"webloc":  "Bookmarks",
 		"zip":     "Archives",
@@ -254,6 +257,8 @@ func moveFileBasedOnExtension(filePath string) {
 		"ttf":     "Fonts",
 		"epub":    "Books",
 		"fossil":  "Fossils",
+		"psd":     "Adobe",
+		"ai":      "Adobe",
 	}
 
 	// Check if the file extension has a defined category
