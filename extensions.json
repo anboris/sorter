@@ -1,48 +1,51 @@
 {
-  "iso": "ISO_Files",
-  "dmg": "ISO_Files",
-  "pkg": "ISO_Files",
-  "pdf": "PDF_Files",
-  "txt": "Text_Files",
-  "jpg": "Images",
-  "jpeg": "Images",
-  "png": "Images",
-  "heic": "Images",
-  "cr2": "Photos",
-  "gif": "Images",
-  "doc": "Office_Docs",
-  "docx": "Office_Docs",
-  "xls": "Office_Docs",
-  "xlsx": "Office_Docs",
-  "pptx": "Office_Docs",
-  "ppt": "Office_Docs",
-  "pages": "Office_Docs",
-  "key": "Office_Docs",
-  "numbers": "Office_Docs",
-  "odt": "Office_Docs",
-  "mp3": "Audio_Files",
-  "m4a": "Audio_Files",
-  "webm": "Video",
-  "mkv": "Video",
-  "mp4": "Video",
-  "m4v": "Video",
-  "mov": "Video",
-  "avi": "Video",
-  "3gp": "Video",
-  "url": "Bookmarks",
-  "webloc": "Bookmarks",
-  "zip": "Archives",
-  "rar": "Archives",
-  "gz": "Archives",
-  "torrent": "Torrents",
-  "otf": "Fonts",
-  "ttc": "Fonts",
-  "ttf": "Fonts",
-  "epub": "Books",
-  "fossil": "Fossils",
-  "psd": "Adobe",
-  "ai": "Adobe",
-  "ipynb": "Jupyter",
-  "csv": "Data",
-  "exe": "EXE"
+  "Media": {
+    "Extensions": [],
+    "Subcategories": {
+      "Images": {
+        "Extensions": ["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "heic"],
+        "Subcategories": {
+          "Raw_Photos": {
+            "Extensions": ["cr2", "cr3", "arw", "nef", "dng", "raf"]
+          },
+          "Web_Optimized": {
+            "Extensions": ["webp", "avif"]
+          }
+        }
+      },
+      "Video": {
+        "Extensions": ["mp4", "mov", "avi", "mkv", "webm", "m4v", "mpg", "mpeg", "flv"]
+      },
+      "Audio": {
+        "Extensions": ["mp3", "wav", "flac", "aac", "m4a", "ogg", "wma"],
+        "Subcategories": {
+          "Projects": {
+            "Extensions": ["aup", "als", "flp", "logic"]
+          }
+        }
+      }
+    }
+  },
+  "Documents": {
+    "Extensions": [],
+    "Subcategories": {
+      "Office": {
+        "Extensions": ["doc", "docx", "ppt", "pptx", "xls", "xlsx", "odt", "ods"],
+        "Subcategories": {
+          "PDF": {
+            "Extensions": ["pdf"]
+          },
+          "Apple": {
+            "Extensions": ["pages", "numbers", "key"]
+          }
+        }
+      },
+      "Text": {
+        "Extensions": ["txt", "md", "rtf", "tex", "org", "csv"]
+      },
+      "Ebooks": {
+        "Extensions": ["epub", "mobi", "azw3"]
+      }
+    }
+  }
 }

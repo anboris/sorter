@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 // Helper function to determine the base directory based on the operating system
@@ -24,12 +25,23 @@ func getBaseDir() string {
 	}
 }
 
+// Category configuration structures
+type CategoryConfig map[string]CategoryGroup
+
+type CategoryGroup struct {
+	Extensions    []string                 `json:"extensions,omitempty"`
+	Subcategories map[string]CategoryGroup `json:"subcategories,omitempty"`
+}
+
 // Directory paths
 var (
-	baseDir   = getBaseDir() // Dynamically set base directory
-	inboxDir  = baseDir + "/inbox"
-	sortedDir = baseDir + "/sorted"
-	deleteDir = baseDir + "/delete"
+	baseDir      = getBaseDir() // Dynamically set base directory
+	inboxDir     = baseDir + "/inbox"
+	sortedDir    = baseDir + "/sorted"
+	deleteDir    = baseDir + "/delete"
+	extensionMap = make(map[string]string)
+	configLoaded bool
+	configMutex  sync.Mutex
 )
 
 var (
@@ -53,23 +65,58 @@ var (
 	}
 )
 
-// Load extension categories from JSON config
-func loadExtensionCategories() (map[string]string, error) {
+func init() {
+	if err := loadExtensionConfig(); err != nil {
+		log.Printf("Warning: Couldn't load extension config: %v", err)
+	}
+}
+
+func loadExtensionConfig() error {
 	configPath := filepath.Join("extensions.json")
 
 	file, err := os.Open(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open extension config: %w", err)
+		return fmt.Errorf("failed to open extension config: %w", err)
 	}
 	defer file.Close()
 
-	var categories map[string]string
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&categories); err != nil {
-		return nil, fmt.Errorf("invalid extension config format: %w", err)
+	var config CategoryConfig
+	if err := json.NewDecoder(file).Decode(&config); err != nil {
+		return fmt.Errorf("invalid extension config format: %w", err)
 	}
 
-	return categories, nil
+	configMutex.Lock()
+	defer configMutex.Unlock()
+	extensionMap = buildExtensionMap(config)
+	configLoaded = true
+
+	return nil
+}
+
+func buildExtensionMap(config CategoryConfig) map[string]string {
+	extMap := make(map[string]string)
+
+	for mainCategory, group := range config {
+		processCategoryGroup(mainCategory, group, extMap)
+	}
+
+	// Add special case for macOS attribute files
+	extMap["_"] = "System/Attribute_Files" // For ._ prefix files
+
+	return extMap
+}
+
+func processCategoryGroup(currentPath string, group CategoryGroup, extMap map[string]string) {
+	// Process current level extensions
+	for _, ext := range group.Extensions {
+		extMap[strings.ToLower(ext)] = currentPath
+	}
+
+	// Process subcategories
+	for subName, subGroup := range group.Subcategories {
+		subPath := filepath.Join(currentPath, subName)
+		processCategoryGroup(subPath, subGroup, extMap)
+	}
 }
 
 // Helper function to calculate SHA-256 hash of a file
@@ -324,31 +371,70 @@ func moveFileWithMetadata(src, dest string) error {
 	return nil
 }
 
-// Function to move file based on its extension
+// Updated file sorting logic
 func moveFileBasedOnExtension(filePath string) {
-	fmt.Printf("Sorting file by extension: %s\n", filePath)
-
 	ext := strings.ToLower(filepath.Ext(filePath))
-	ext = strings.TrimPrefix(ext, ".") // Remove the leading dot
+	baseName := filepath.Base(filePath)
 
-	// Load categories from config
-	extCategories, err := loadExtensionCategories()
-	if err != nil {
-		log.Printf("Error loading extension categories: %v", err)
-		extCategories = make(map[string]string) // Use empty map as fallback
+	// Handle macOS extended attributes
+	if strings.HasPrefix(baseName, "._") && runtime.GOOS == "darwin" {
+		ext = "._*"
 	}
 
-	// Default folder if no specific category is found
-	categoryFolder := "Miscellaneous"
-
-	// Check if the file extension has a defined category
-	if folder, found := extCategories[ext]; found {
-		categoryFolder = folder
+	ext = strings.TrimPrefix(ext, ".")
+	if ext == "" {
+		ext = "no_extension"
 	}
 
-	// Move the file to the appropriate folder
-	destFolder := filepath.Join(sortedDir, categoryFolder)
+	configMutex.Lock()
+	defer configMutex.Unlock()
+
+	var categoryPath string
+	if path, exists := extensionMap[ext]; exists {
+		categoryPath = path
+	} else {
+		// Create misc subcategory based on extension type
+		categoryPath = filepath.Join("Misc", strings.ToUpper(ext))
+	}
+
+	// Special case handling
+	switch {
+	case isTemporaryFile(baseName):
+		categoryPath = "System/Temporary_Files"
+	case isLargeSystemFile(baseName):
+		categoryPath = "System/Large_Files"
+	}
+
+	destFolder := filepath.Join(sortedDir, categoryPath)
 	moveFile(filePath, destFolder)
+}
+
+// Helper functions for special cases
+func isTemporaryFile(name string) bool {
+	tempPatterns := []string{"*.tmp", "*.bak", "*.~", "~*"}
+	name = strings.ToLower(name)
+
+	for _, pattern := range tempPatterns {
+		if matched, _ := filepath.Match(pattern, name); matched {
+			return true
+		}
+	}
+	return false
+}
+
+func isLargeSystemFile(name string) bool {
+	systemFiles := map[string][]string{
+		"windows": {"pagefile.sys", "hiberfil.sys", "swapfile.sys"},
+		"darwin":  {"swapfile", "sleepimage"},
+	}
+
+	lowerName := strings.ToLower(name)
+	for _, f := range systemFiles[runtime.GOOS] {
+		if lowerName == f {
+			return true
+		}
+	}
+	return false
 }
 
 func main() {
