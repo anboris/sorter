@@ -30,17 +30,26 @@ var (
 	deleteDir = baseDir + "/delete"
 )
 
-// Directories to exclude (supports glob patterns)
-var excludeDirPatterns = []string{
-	".git", ".svn", ".hg", // Version control
-	".idea", ".vscode", // IDE configurations
-	"node_modules", "__pycache__", // Language-specific
-	"__MACOSX",                       // macOS archive artifacts
-	"*.app", "*.kext", "*.framework", // macOS bundles
-	"*.bundle", "*.plugin", // macOS plugins
-	"System Volume Information", // Windows system directory
-	"lost+found",                // Linux filesystem
-}
+var (
+	excludeDirPatterns = []string{
+		".git", ".svn", ".hg",
+		".idea", ".vscode",
+		"node_modules", "__pycache__",
+		"__MACOSX",
+		"*.app", "*.kext", "*.framework",
+		"*.bundle", "*.plugin",
+		"System Volume Information",
+		"lost+found",
+		"bin", "obj", "target", "build", "dist", // Build artifacts
+	}
+
+	excludeFilePatterns = []string{
+		"*.tmp", "*.bak", "*.~", "~*", // Temporary/backup files
+		"*.dll", "*.sys", // Windows system files
+		"*.log", "*.dmp", // Logs and dumps
+		"*.swp", "*.swo", // Vim swap files
+	}
+)
 
 // Helper function to calculate SHA-256 hash of a file
 func fileHash(filePath string) (string, error) {
@@ -131,9 +140,42 @@ func checkAndSortFiles() error {
 			return nil
 		}
 
-		// Skip hidden files (already handled hidden directories)
-		if strings.HasPrefix(info.Name(), ".") {
+		fileName := info.Name()
+
+		// Skip hidden files and macOS extended attributes
+		if strings.HasPrefix(fileName, ".") {
+			if runtime.GOOS == "darwin" && strings.HasPrefix(fileName, "._") {
+				fmt.Printf("Skipping macOS extended attribute file: %s\n", filePath)
+			}
 			return nil
+		}
+
+		// Skip excluded file patterns
+		for _, pattern := range excludeFilePatterns {
+			matched, err := filepath.Match(pattern, fileName)
+			if err == nil && matched {
+				fmt.Printf("Skipping excluded file: %s\n", filePath)
+				return nil
+			}
+		}
+
+		// Skip system files based on OS
+		switch runtime.GOOS {
+		case "windows":
+			lowerName := strings.ToLower(fileName)
+			switch lowerName {
+			case "pagefile.sys", "hiberfil.sys", "swapfile.sys",
+				"thumbs.db", "desktop.ini":
+				fmt.Printf("Skipping Windows system file: %s\n", filePath)
+				return nil
+			}
+		case "darwin":
+			switch fileName {
+			case "swapfile", "sleepimage", ".DS_Store",
+				".Spotlight-V100", ".fseventsd":
+				fmt.Printf("Skipping macOS system file: %s\n", filePath)
+				return nil
+			}
 		}
 
 		// Skip files that are empty
