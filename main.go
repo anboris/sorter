@@ -30,6 +30,18 @@ var (
 	deleteDir = baseDir + "/delete"
 )
 
+// Directories to exclude (supports glob patterns)
+var excludeDirPatterns = []string{
+	".git", ".svn", ".hg", // Version control
+	".idea", ".vscode", // IDE configurations
+	"node_modules", "__pycache__", // Language-specific
+	"__MACOSX",                       // macOS archive artifacts
+	"*.app", "*.kext", "*.framework", // macOS bundles
+	"*.bundle", "*.plugin", // macOS plugins
+	"System Volume Information", // Windows system directory
+	"lost+found",                // Linux filesystem
+}
+
 // Helper function to calculate SHA-256 hash of a file
 func fileHash(filePath string) (string, error) {
 	file, err := os.Open(filePath)
@@ -93,7 +105,34 @@ func checkAndSortFiles() error {
 		}
 
 		// Skip directories or hidden files (e.g., .DS_Store)
-		if info.IsDir() || strings.HasPrefix(info.Name(), ".") {
+		if info.IsDir() {
+			dirName := info.Name()
+
+			// Check exclusion patterns first
+			for _, pattern := range excludeDirPatterns {
+				matched, err := filepath.Match(pattern, dirName)
+				if err != nil {
+					fmt.Printf("Pattern error %q: %v\n", pattern, err)
+					continue
+				}
+				if matched {
+					fmt.Printf("Skipping excluded directory: %s\n", filePath)
+					return filepath.SkipDir
+				}
+			}
+
+			// Skip hidden directories (including .git)
+			if strings.HasPrefix(dirName, ".") {
+				fmt.Printf("Skipping hidden directory: %s\n", filePath)
+				return filepath.SkipDir
+			}
+
+			// Important: Return here to prevent processing directories as files
+			return nil
+		}
+
+		// Skip hidden files (already handled hidden directories)
+		if strings.HasPrefix(info.Name(), ".") {
 			return nil
 		}
 
