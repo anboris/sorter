@@ -2,8 +2,10 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -50,6 +52,25 @@ var (
 		"*.swp", "*.swo", // Vim swap files
 	}
 )
+
+// Load extension categories from JSON config
+func loadExtensionCategories() (map[string]string, error) {
+	configPath := filepath.Join("extensions.json")
+
+	file, err := os.Open(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open extension config: %w", err)
+	}
+	defer file.Close()
+
+	var categories map[string]string
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&categories); err != nil {
+		return nil, fmt.Errorf("invalid extension config format: %w", err)
+	}
+
+	return categories, nil
+}
 
 // Helper function to calculate SHA-256 hash of a file
 func fileHash(filePath string) (string, error) {
@@ -310,55 +331,15 @@ func moveFileBasedOnExtension(filePath string) {
 	ext := strings.ToLower(filepath.Ext(filePath))
 	ext = strings.TrimPrefix(ext, ".") // Remove the leading dot
 
+	// Load categories from config
+	extCategories, err := loadExtensionCategories()
+	if err != nil {
+		log.Printf("Error loading extension categories: %v", err)
+		extCategories = make(map[string]string) // Use empty map as fallback
+	}
+
 	// Default folder if no specific category is found
 	categoryFolder := "Miscellaneous"
-
-	// Check if the file extension has a defined category
-	extCategories := map[string]string{
-		"iso":     "ISO_Files",
-		"dmg":     "ISO_Files",
-		"pkg":     "ISO_Files",
-		"pdf":     "PDF_Files",
-		"txt":     "Text_Files",
-		"jpg":     "Images",
-		"jpeg":    "Images",
-		"png":     "Images",
-		"heic":    "Images",
-		"CR2":     "Photos",
-		"gif":     "Images",
-		"doc":     "Office_Docs",
-		"docx":    "Office_Docs",
-		"xls":     "Office_Docs",
-		"xlsx":    "Office_Docs",
-		"pptx":    "Office_Docs",
-		"ppt":     "Office_Docs",
-		"pages":   "Office_Docs",
-		"key":     "Office_Docs",
-		"numbers": "Office_Docs",
-		"odt":     "Office_Docs",
-		"mp3":     "Audio_Files",
-		"m4a":     "Audio_Files",
-		"webm":    "Video",
-		"mkv":     "Video",
-		"mp4":     "Video",
-		"m4v":     "Video",
-		"mov":     "Video",
-		"avi":     "Video",
-		"3gp":     "Video",
-		"url":     "Bookmarks",
-		"webloc":  "Bookmarks",
-		"zip":     "Archives",
-		"rar":     "Archives",
-		"gz":      "Archives",
-		"torrent": "Torrents",
-		"otf":     "Fonts",
-		"ttc":     "Fonts",
-		"ttf":     "Fonts",
-		"epub":    "Books",
-		"fossil":  "Fossils",
-		"psd":     "Adobe",
-		"ai":      "Adobe",
-	}
 
 	// Check if the file extension has a defined category
 	if folder, found := extCategories[ext]; found {
