@@ -395,44 +395,8 @@ func moveFileBasedOnExtension(filePath string) {
 		categoryPath = filepath.Join("Misc", strings.ToUpper(ext))
 	}
 
-	// Special case handling
-	switch {
-	case isTemporaryFile(baseName):
-		categoryPath = "System/Temporary_Files"
-	case isLargeSystemFile(baseName):
-		categoryPath = "System/Large_Files"
-	}
-
 	destFolder := filepath.Join(sortedDir, categoryPath)
 	moveFile(filePath, destFolder)
-}
-
-// Helper functions for special cases
-func isTemporaryFile(name string) bool {
-	tempPatterns := []string{"*.tmp", "*.bak", "*.~", "~*"}
-	name = strings.ToLower(name)
-
-	for _, pattern := range tempPatterns {
-		if matched, _ := filepath.Match(pattern, name); matched {
-			return true
-		}
-	}
-	return false
-}
-
-func isLargeSystemFile(name string) bool {
-	systemFiles := map[string][]string{
-		"windows": {"pagefile.sys", "hiberfil.sys", "swapfile.sys"},
-		"darwin":  {"swapfile", "sleepimage"},
-	}
-
-	lowerName := strings.ToLower(name)
-	for _, f := range systemFiles[runtime.GOOS] {
-		if lowerName == f {
-			return true
-		}
-	}
-	return false
 }
 
 func main() {
