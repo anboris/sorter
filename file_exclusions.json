@@ -1,0 +1,11 @@
+{
+  "common": [
+    "*.tmp", "*.bak", "*.~", "~*",
+    "*.log", "*.dmp",
+    "*.swp", "*.swo"
+  ],
+  "os_specific": {
+    "windows": ["*.dll", "*.sys", "thumbs.db", "desktop.ini"],
+    "darwin": [".DS_Store", ".Spotlight-V100", ".fseventsd"]
+  }
+}

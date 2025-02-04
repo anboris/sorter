@@ -33,6 +33,11 @@ type CategoryGroup struct {
 	Subcategories map[string]CategoryGroup `json:"subcategories,omitempty"`
 }
 
+type ExclusionConfig struct {
+	Common     []string            `json:"common"`
+	OSSpecific map[string][]string `json:"os_specific"`
+}
+
 // Directory paths
 var (
 	baseDir      = getBaseDir() // Dynamically set base directory
@@ -42,32 +47,44 @@ var (
 	extensionMap = make(map[string]string)
 	configLoaded bool
 	configMutex  sync.Mutex
+	excludeDirs  []string
+	excludeFiles []string
 )
 
-var (
-	excludeDirPatterns = []string{
-		".git", ".svn", ".hg",
-		".idea", ".vscode",
-		"node_modules", "__pycache__",
-		"__MACOSX",
-		"*.app", "*.kext", "*.framework",
-		"*.bundle", "*.plugin",
-		"System Volume Information",
-		"lost+found",
-		"bin", "obj", "target", "build", "dist", // Build artifacts
+func loadExclusionConfig() error {
+	// Load directory exclusions
+	dirExclPath := filepath.Join("dir_exclusions.json")
+	if err := loadExclusionFile(dirExclPath, &excludeDirs); err != nil {
+		return err
 	}
 
-	excludeFilePatterns = []string{
-		"*.tmp", "*.bak", "*.~", "~*", // Temporary/backup files
-		"*.dll", "*.sys", // Windows system files
-		"*.log", "*.dmp", // Logs and dumps
-		"*.swp", "*.swo", // Vim swap files
+	// Load file exclusions
+	fileExclPath := filepath.Join("file_exclusions.json")
+	return loadExclusionFile(fileExclPath, &excludeFiles)
+}
+
+func loadExclusionFile(path string, target *[]string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("failed to open exclusion config: %w", err)
 	}
-)
+	defer file.Close()
+
+	var config ExclusionConfig
+	if err := json.NewDecoder(file).Decode(&config); err != nil {
+		return fmt.Errorf("invalid exclusion config format: %w", err)
+	}
+
+	*target = append(config.Common, config.OSSpecific[runtime.GOOS]...)
+	return nil
+}
 
 func init() {
 	if err := loadExtensionConfig(); err != nil {
 		log.Printf("Warning: Couldn't load extension config: %v", err)
+	}
+	if err := loadExclusionConfig(); err != nil {
+		log.Printf("Warning: Couldn't load exclusion config: %v", err)
 	}
 }
 
@@ -186,7 +203,7 @@ func checkAndSortFiles() error {
 			dirName := info.Name()
 
 			// Check exclusion patterns first
-			for _, pattern := range excludeDirPatterns {
+			for _, pattern := range excludeDirs {
 				matched, err := filepath.Match(pattern, dirName)
 				if err != nil {
 					fmt.Printf("Pattern error %q: %v\n", pattern, err)
@@ -219,7 +236,7 @@ func checkAndSortFiles() error {
 		}
 
 		// Skip excluded file patterns
-		for _, pattern := range excludeFilePatterns {
+		for _, pattern := range excludeFiles {
 			matched, err := filepath.Match(pattern, fileName)
 			if err == nil && matched {
 				fmt.Printf("Skipping excluded file: %s\n", filePath)

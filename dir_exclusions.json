@@ -1,0 +1,14 @@
+{
+  "common": [
+    ".git", ".svn", ".hg",
+    ".idea", ".vscode",
+    "node_modules", "__pycache__",
+    "__MACOSX",
+    "bin", "obj", "target", "build", "dist"
+  ],
+  "os_specific": {
+    "windows": ["System Volume Information"],
+    "darwin": ["*.app", "*.kext", "*.framework", "*.bundle", "*.plugin"],
+    "linux": ["lost+found"]
+  }
+}
