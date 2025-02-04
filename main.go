@@ -244,25 +244,6 @@ func checkAndSortFiles() error {
 			}
 		}
 
-		// Skip system files based on OS
-		switch runtime.GOOS {
-		case "windows":
-			lowerName := strings.ToLower(fileName)
-			switch lowerName {
-			case "pagefile.sys", "hiberfil.sys", "swapfile.sys",
-				"thumbs.db", "desktop.ini":
-				fmt.Printf("Skipping Windows system file: %s\n", filePath)
-				return nil
-			}
-		case "darwin":
-			switch fileName {
-			case "swapfile", "sleepimage", ".DS_Store",
-				".Spotlight-V100", ".fseventsd":
-				fmt.Printf("Skipping macOS system file: %s\n", filePath)
-				return nil
-			}
-		}
-
 		// Skip files that are empty
 		if info.Size() == 0 {
 			fmt.Printf("Skipping empty file: %s\n", filePath)

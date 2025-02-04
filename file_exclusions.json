@@ -5,7 +5,21 @@
     "*.swp", "*.swo"
   ],
   "os_specific": {
-    "windows": ["*.dll", "*.sys", "thumbs.db", "desktop.ini"],
-    "darwin": [".DS_Store", ".Spotlight-V100", ".fseventsd"]
+    "windows": [
+      "*.dll",
+      "*.sys",
+      "thumbs.db",
+      "desktop.ini",
+      "pagefile.sys",
+      "hiberfil.sys",
+      "swapfile.sys"
+    ],
+    "darwin": [
+      ".DS_Store",
+      ".Spotlight-V100",
+      ".fseventsd",
+      "swapfile",
+      "sleepimage"
+    ]
   }
 }
