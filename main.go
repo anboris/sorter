@@ -238,8 +238,12 @@ func checkAndSortFiles() error {
 		// Skip excluded file patterns
 		for _, pattern := range excludeFiles {
 			matched, err := filepath.Match(pattern, fileName)
-			if err == nil && matched {
-				fmt.Printf("Skipping excluded file: %s\n", filePath)
+			if err != nil {
+				fmt.Printf("Pattern error %q: %v\n", pattern, err)
+				continue
+			}
+			if matched {
+				fmt.Printf("Skipping excluded file: %s (matched pattern: %s)\n", filePath, pattern)
 				return nil
 			}
 		}
