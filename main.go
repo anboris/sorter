@@ -19,7 +19,7 @@ func getBaseDir() string {
 	case "windows":
 		return "C:/me/sort" // Base directory for Windows
 	case "darwin":
-		return "/Volumes/CCC" // Base directory for macOS
+		return "/Users/andrew/sort" // Base directory for macOS
 	default:
 		return "C:/me/sort" // Default to Linux or other OS
 	}
