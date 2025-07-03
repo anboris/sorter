@@ -82,10 +82,10 @@ func loadExclusionFile(path string, target *[]string) error {
 
 func init() {
 	if err := loadExtensionConfig(); err != nil {
-		log.Printf("Warning: Couldn't load extension config: %v", err)
+		log.Fatalf("Failed to load extension config: %v", err)
 	}
 	if err := loadExclusionConfig(); err != nil {
-		log.Printf("Warning: Couldn't load exclusion config: %v", err)
+		log.Fatalf("Failed to load exclusion config: %v", err)
 	}
 }
 
