@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -153,12 +154,42 @@ func fileHash(filePath string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
+// Helper function to print progress
+func printProgress(current, total int) {
+	fmt.Printf("\rProcessing: %d/%d (%.0f%%)", current, total, float64(current)/float64(total)*100)
+	os.Stdout.Sync() // Force flush the output
+}
+
 // Function to collect hashes from sorted directory into a hash map
 func collectSortedHashes() (map[string]string, error) {
 	hashes := make(map[string]string)
+	var totalFiles int
+	var processedFiles int
 
-	// Walk through the sorted directory and its subdirectories to collect file hashes
-	err := filepath.Walk(sortedDir, func(filePath string, info os.FileInfo, err error) error {
+	// FIRST PASS: Count total files
+	err := filepath.Walk(sortedDir, func(filePath string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			totalFiles++
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if totalFiles == 0 {
+		fmt.Println("No files found in sorted directory")
+		return hashes, nil
+	}
+
+	// Clear any previous output before starting progress
+	fmt.Print("\033[2K\r") // ANSI escape code to clear line
+	fmt.Printf("Indexing %d files in sorted directory...\n", totalFiles)
+
+	// SECOND PASS: Walk through the sorted directory to collect file hashes
+	err = filepath.Walk(sortedDir, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -168,16 +199,21 @@ func collectSortedHashes() (map[string]string, error) {
 			return nil
 		}
 
-		// Calculate hash of the file and add to the map
+		processedFiles++
+		printProgress(processedFiles, totalFiles)
+
 		hash, err := fileHash(filePath)
 		if err != nil {
-			fmt.Printf("Error hashing file %s: %v\n", filePath, err)
+			// Print error on new line to not break progress bar
+			fmt.Printf("\nError hashing file %s: %v\n", filePath, err)
+			printProgress(processedFiles, totalFiles) // Redraw progress bar
 			return nil
 		}
 		hashes[hash] = filePath
 		return nil
 	})
 
+	fmt.Println() // New line after progress bar
 	return hashes, err
 }
 
