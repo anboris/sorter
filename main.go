@@ -439,11 +439,37 @@ func moveFileBasedOnExtension(filePath string) {
 	moveFile(filePath, destFolder)
 }
 
+// Function to scan and remove empty folders in the inbox directory after sorting
+func removeEmptyDirs(root string) error {
+	return filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			fmt.Printf("Skipping %s due to error: %v\n", path, err)
+			return nil
+		}
+		if path == root || !info.IsDir() {
+			return nil
+		}
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return nil // skip if we can't read
+		}
+		if len(entries) == 0 {
+			fmt.Printf("Removing empty folder: %s\n", path)
+			return os.Remove(path)
+		}
+		return nil
+	})
+}
+
 func main() {
 	err := checkAndSortFiles()
 	if err != nil {
 		fmt.Println("Error while sorting files:", err)
 	} else {
 		fmt.Println("File sorting completed successfully.")
+	}
+	err = removeEmptyDirs(inboxDir)
+	if err != nil {
+		fmt.Printf("Error cleaning empty folders: %s", err)
 	}
 }
