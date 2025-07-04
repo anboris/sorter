@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Helper function to determine the base directory based on the operating system
@@ -162,9 +163,19 @@ func printProgress(current, total int) {
 
 // Function to collect hashes from sorted directory into a hash map
 func collectSortedHashes() (map[string]string, error) {
+	start := time.Now()
 	hashes := make(map[string]string)
 	var totalFiles int
 	var processedFiles int
+
+	defer func() {
+		duration := time.Since(start)
+		fmt.Printf(
+			"Processing completed in %v (%.1f files/sec)\n",
+			duration.Round(time.Second),
+			float64(totalFiles)/duration.Seconds(),
+		)
+	}()
 
 	// FIRST PASS: Count total files
 	err := filepath.Walk(sortedDir, func(filePath string, info fs.FileInfo, err error) error {
