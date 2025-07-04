@@ -1,9 +1,9 @@
 package main
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/cespare/xxhash/v2"
 	"io"
 	"io/fs"
 	"log"
@@ -137,7 +137,7 @@ func processCategoryGroup(currentPath string, group CategoryGroup, extMap map[st
 	}
 }
 
-// Helper function to calculate SHA-256 hash of a file
+// Helper function to calculate XXH64 hash of a file
 func fileHash(filePath string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -145,13 +145,13 @@ func fileHash(filePath string) (string, error) {
 	}
 	defer file.Close()
 
-	hash := sha256.New()
+	hash := xxhash.New()
 	_, err = io.Copy(hash, file)
 	if err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+	return fmt.Sprintf("%x", hash.Sum64()), nil
 }
 
 // Helper function to print progress
